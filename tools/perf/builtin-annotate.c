@@ -214,6 +214,10 @@ static int __cmd_annotate(struct perf_annotate *ann)
 		struct hists *hists = &pos->hists;
 		u32 nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
 
+		if (symbol_conf.event_group &&
+		    !perf_evsel__is_group_leader(pos))
+			continue;
+
 		if (nr_samples > 0) {
 			total_nr_samples += nr_samples;
 			hists__collapse_resort(hists);
@@ -293,6 +297,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
 	OPT_STRING(0, "objdump", &objdump_path, "path",
 		   "objdump binary to use for disassembly and annotations"),
+	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+		    "Show event grou information together"),
 	OPT_END()
 	};
 

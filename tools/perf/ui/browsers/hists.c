@@ -1125,6 +1125,24 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
 	const struct thread *thread = hists->thread_filter;
 	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
 	u64 nr_events = hists->stats.total_period;
+	struct perf_evsel *evsel = hists_2_evsel(hists);
+	char buf[512];
+	size_t buflen = sizeof(buf);
+
+	if (symbol_conf.event_group && evsel->nr_members) {
+		int i;
+		struct events_stats *stats;
+
+		perf_evsel__group_desc(evsel, buf, buflen);
+		ev_name = buf;
+
+		for (i = 0; i < evsel->nr_members; i++) {
+			stats = &hists->group_stats[i];
+
+			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
+			nr_events += stats->total_period;
+		}
+	}
 
 	nr_samples = convert_unit(nr_samples, &unit);
 	printed = scnprintf(bf, size,
@@ -1520,6 +1538,19 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
 
 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
 						       HE_COLORSET_NORMAL);
+
+	if (symbol_conf.event_group && evsel->nr_members) {
+		int i;
+		struct events_stats *stats;
+
+		ev_name = perf_evsel__group_name(evsel);
+
+		for (i = 0; i < evsel->nr_members; i++) {
+			stats = &evsel->hists.group_stats[i];
+
+			nr_events += stats->nr_events[PERF_RECORD_SAMPLE];
+		}
+	}
 
 	nr_events = convert_unit(nr_events, &unit);
 	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,

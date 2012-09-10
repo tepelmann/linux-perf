@@ -4,6 +4,7 @@
 #include "../perf.h"
 #include <linux/list.h>
 #include <linux/rbtree.h>
+#include <string.h>
 #include "event.h"
 #include "symbol.h"
 
@@ -143,4 +144,20 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
 	cursor->curr = cursor->curr->next;
 	cursor->pos++;
 }
+
+/* NOTE: This function can leak a cursor node.  Use with caution. */
+static inline void callchain_cursor_next(struct callchain_cursor *cursor)
+{
+	cursor->first = cursor->first->next;
+	cursor->nr--;
+}
+
+static inline void callchain_cursor_copy(struct callchain_cursor *dest,
+					 struct callchain_cursor *src)
+{
+	memcpy(dest, src, sizeof(*src));
+}
+
+int callchain_cursor_peek_al(struct callchain_cursor *cursor,
+			     struct addr_location *al);
 #endif	/* __PERF_CALLCHAIN_H */

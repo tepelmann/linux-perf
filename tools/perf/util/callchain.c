@@ -461,3 +461,18 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
 
 	return 0;
 }
+
+int callchain_cursor_peek_al(struct callchain_cursor *cursor,
+			     struct addr_location *al)
+{
+	struct callchain_cursor_node *node = cursor->first;
+
+	if (node == NULL || cursor->nr == 0)
+		return -1;
+
+	al->map = node->map;
+	al->sym = node->sym;
+	al->addr = node->ip;
+
+	return 0;
+}

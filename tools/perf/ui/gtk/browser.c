@@ -49,7 +49,7 @@ static const char *perf_gtk__get_percent_color(double percent)
 static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
 					 struct hist_entry *he)			\
 {										\
-	double percent = 100.0 * he->_field / hpp->total_period;		\
+	double percent = 100.0 * he->stat._field / hpp->total_period;		\
 	const char *markup;							\
 	int ret = 0;								\
 										\

@@ -570,6 +570,10 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
 					     struct hist_entry *he)	\
 {									\
 	double percent = 100.0 * he->stat._field / hpp->total_period;	\
+									\
+	if (symbol_conf.cumulate_callchain)				\
+		percent = 100.0 * he->stat_acc->_field / hpp->total_period; \
+									\
 	*(double *)hpp->ptr = percent;					\
 	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
 }

@@ -53,6 +53,9 @@ static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
 	const char *markup;							\
 	int ret = 0;								\
 										\
+	if (symbol_conf.cumulate_callchain)					\
+		percent = 100.0 * he->stat_acc->_field / hpp->total_period;	\
+										\
 	markup = perf_gtk__get_percent_color(percent);				\
 	if (markup)								\
 		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\

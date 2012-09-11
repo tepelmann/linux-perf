@@ -387,6 +387,61 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
 	return __add_hist_entry(hists, &entry, al, period, sample_self);
 }
 
+static struct hist_entry *cumulate_hist_entry(struct hists *self,
+					      struct addr_location *al,
+					      struct symbol *sym_parent,
+					      u64 period)
+{
+	unsigned int i;
+	struct hist_entry *he, *he_self;
+	struct callchain_cursor cursor;
+	struct addr_location al_child;
+
+	/*
+	 * make a copy of callchain cursor since callchain_cursor_next()
+	 * can leak callchain cursor nodes otherwise.
+	 */
+	callchain_cursor_copy(&cursor, &callchain_cursor);
+
+	he_self = add_hist_entry(self, al, sym_parent, period, true);
+	if (he_self == NULL)
+		return NULL;
+
+	callchain_cursor_next(&cursor);
+
+	/*
+	 * map, sym and addr in al_child will be updated on a loop below.
+	 * The other fields are kept same as original @al.
+	 */
+	al_child = *al;
+
+	/* add all entries in the original callchain */
+	for (i = 1; i < callchain_cursor.nr; i++) {
+		if (callchain_cursor_peek_al(&cursor, &al_child))
+			return NULL;
+
+		/*
+		 * XXX: Adding an entry without symbol information caused
+		 * subtle problems.  Just skip it for now.
+		 */
+		if (al_child.sym == NULL) {
+			callchain_cursor_next(&cursor);
+			continue;
+		}
+
+		he = add_hist_entry(self, &al_child, sym_parent, period, false);
+		if (he == NULL)
+			return NULL;
+
+		if (callchain_append(he->callchain, &cursor, period))
+			return NULL;
+
+		callchain_cursor_next(&cursor);
+	}
+
+	return he_self;
+}
+
 struct hist_entry *__hists__add_branch_entry(struct hists *self,
 					     struct addr_location *al,
 					     struct symbol *sym_parent,
@@ -418,6 +473,9 @@ struct hist_entry *__hists__add_entry(struct hists *self,
 				      struct addr_location *al,
 				      struct symbol *sym_parent, u64 period)
 {
+	if (symbol_conf.cumulate_callchain)
+		return cumulate_hist_entry(self, al, sym_parent, period);
+
 	return add_hist_entry(self, al, sym_parent, period, true);
 }
 

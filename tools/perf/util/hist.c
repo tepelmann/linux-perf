@@ -628,6 +628,23 @@ void hists__collapse_resort_threaded(struct hists *hists)
  * reverse the map, sort on period.
  */
 
+static int hists__output_cmp(struct hist_entry *left, struct hist_entry *right)
+{
+	int cmp = left->stat.period > right->stat.period;
+
+	if (symbol_conf.cumulate_callchain) {
+		/*
+		 * Put caller above callee when they have equal period.
+		 */
+		if (left->stat_acc->period == right->stat_acc->period)
+			cmp = left->callchain->max_depth < right->callchain->max_depth;
+		else
+			cmp = left->stat_acc->period > right->stat_acc->period;
+	}
+
+	return cmp;
+}
+
 static void __hists__insert_output_entry(struct rb_root *entries,
 					 struct hist_entry *he,
 					 u64 min_callchain_hits)
@@ -644,7 +661,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
 		parent = *p;
 		iter = rb_entry(parent, struct hist_entry, rb_node);
 
-		if (he->stat.period > iter->stat.period)
+		if (hists__output_cmp(he, iter))
 			p = &(*p)->rb_left;
 		else
 			p = &(*p)->rb_right;

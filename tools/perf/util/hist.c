@@ -299,10 +299,10 @@ static u8 symbol__parent_filter(const struct symbol *parent)
 	return 0;
 }
 
-static struct hist_entry *add_hist_entry(struct hists *hists,
-				      struct hist_entry *entry,
-				      struct addr_location *al,
-				      u64 period, bool sample_self)
+static struct hist_entry *__add_hist_entry(struct hists *hists,
+					   struct hist_entry *entry,
+					   struct addr_location *al,
+					   u64 period, bool sample_self)
 {
 	struct rb_node **p;
 	struct rb_node *parent = NULL;
@@ -362,6 +362,31 @@ out_unlock:
 	return he;
 }
 
+static struct hist_entry *add_hist_entry(struct hists *hists,
+					 struct addr_location *al,
+					 struct symbol *sym_parent,
+					 u64 period, bool sample_self)
+{
+	struct hist_entry entry = {
+		.thread	= al->thread,
+		.ms = {
+			.map	= al->map,
+			.sym	= al->sym,
+		},
+		.cpu	= al->cpu,
+		.ip	= al->addr,
+		.level	= al->level,
+		.stat = {
+			.period	= period,
+			.nr_events = 1,
+		},
+		.parent = sym_parent,
+		.filtered = symbol__parent_filter(sym_parent),
+	};
+
+	return __add_hist_entry(hists, &entry, al, period, sample_self);
+}
+
 struct hist_entry *__hists__add_branch_entry(struct hists *self,
 					     struct addr_location *al,
 					     struct symbol *sym_parent,
@@ -386,31 +411,14 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
 		.branch_info = bi,
 	};
 
-	return add_hist_entry(self, &entry, al, period, true);
+	return __add_hist_entry(self, &entry, al, period, true);
 }
 
 struct hist_entry *__hists__add_entry(struct hists *self,
 				      struct addr_location *al,
 				      struct symbol *sym_parent, u64 period)
 {
-	struct hist_entry entry = {
-		.thread	= al->thread,
-		.ms = {
-			.map	= al->map,
-			.sym	= al->sym,
-		},
-		.cpu	= al->cpu,
-		.ip	= al->addr,
-		.level	= al->level,
-		.stat = {
-			.period	= period,
-			.nr_events = 1,
-		},
-		.parent = sym_parent,
-		.filtered = symbol__parent_filter(sym_parent),
-	};
-
-	return add_hist_entry(self, &entry, al, period, true);
+	return add_hist_entry(self, al, sym_parent, period, true);
 }
 
 int64_t

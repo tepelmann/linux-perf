@@ -234,26 +234,50 @@ void hists__decay_entries_threaded(struct hists *hists,
  * histogram, sorted on item, collects periods
  */
 
-static struct hist_entry *hist_entry__new(struct hist_entry *template)
+static struct hist_entry *hist_entry__new_callchain(struct hist_entry *template,
+						    bool sample_self)
 {
-	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
+	const size_t callchain_size = sizeof(struct callchain_root);
 	struct hist_entry *he = malloc(sizeof(*he) + callchain_size);
 
+	if (he == NULL)
+		return NULL;
+
+	*he = *template;
+
+	if (symbol_conf.cumulate_callchain) {
+		he->stat_acc = malloc(sizeof(he->stat));
+		if (he->stat_acc == NULL) {
+			free(he);
+			return NULL;
+		}
+		memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
+		if (!sample_self)
+			memset(&he->stat, 0, sizeof(he->stat));
+	}
+
+	if (he->ms.map)
+		he->ms.map->referenced = true;
+
+	callchain_init(he->callchain);
+
+	return he;
+}
+
+static struct hist_entry *hist_entry__new(struct hist_entry *template,
+					  bool sample_self)
+{
+	struct hist_entry *he;
+
+	if (symbol_conf.use_callchain)
+		return hist_entry__new_callchain(template, sample_self);
+
+	he = malloc(sizeof(*he));
 	if (he != NULL) {
 		*he = *template;
-		if (symbol_conf.cumulate_callchain) {
-			he->stat_acc = malloc(sizeof(he->stat));
-			if (he->stat_acc == NULL) {
-				free(he);
-				return NULL;
-			}
-			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-		}
 
 		if (he->ms.map)
 			he->ms.map->referenced = true;
-		if (symbol_conf.use_callchain)
-			callchain_init(he->callchain);
 	}
 
 	return he;
@@ -278,7 +302,7 @@ static u8 symbol__parent_filter(const struct symbol *parent)
 static struct hist_entry *add_hist_entry(struct hists *hists,
 				      struct hist_entry *entry,
 				      struct addr_location *al,
-				      u64 period)
+				      u64 period, bool sample_self)
 {
 	struct rb_node **p;
 	struct rb_node *parent = NULL;
@@ -296,7 +320,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
 		cmp = hist_entry__cmp(entry, he);
 
 		if (!cmp) {
-			hist_entry__add_period(&he->stat, period);
+			if (sample_self)
+				hist_entry__add_period(&he->stat, period);
 			if (symbol_conf.cumulate_callchain)
 				hist_entry__add_period(he->stat_acc, period);
 
@@ -320,14 +345,15 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
 			p = &(*p)->rb_right;
 	}
 
-	he = hist_entry__new(entry);
+	he = hist_entry__new(entry, sample_self);
 	if (!he)
 		goto out_unlock;
 
 	rb_link_node(&he->rb_node_in, parent, p);
 	rb_insert_color(&he->rb_node_in, hists->entries_in);
 out:
-	hist_entry__add_cpumode_period(&he->stat, al->cpumode, period);
+	if (sample_self)
+		hist_entry__add_cpumode_period(&he->stat, al->cpumode, period);
 	if (symbol_conf.cumulate_callchain)
 		hist_entry__add_cpumode_period(he->stat_acc, al->cpumode,
 					       period);
@@ -360,7 +386,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
 		.branch_info = bi,
 	};
 
-	return add_hist_entry(self, &entry, al, period);
+	return add_hist_entry(self, &entry, al, period, true);
 }
 
 struct hist_entry *__hists__add_entry(struct hists *self,
@@ -384,7 +410,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
 		.filtered = symbol__parent_filter(sym_parent),
 	};
 
-	return add_hist_entry(self, &entry, al, period);
+	return add_hist_entry(self, &entry, al, period, true);
 }
 
 int64_t

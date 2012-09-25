@@ -78,6 +78,7 @@ struct hist_entry {
 	struct rb_node		rb_node_in;
 	struct rb_node		rb_node;
 	struct he_stat		stat;
+	struct he_stat		*group_stats;
 	struct map_symbol	ms;
 	struct thread		*thread;
 	u64			ip;

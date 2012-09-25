@@ -4,6 +4,7 @@
 #include "hist.h"
 #include "session.h"
 #include "sort.h"
+#include "evsel.h"
 #include <math.h>
 
 static bool hists__filter_entry_by_dso(struct hists *hists,
@@ -165,6 +166,32 @@ static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
 	dest->period_guest_sys	+= src->period_guest_sys;
 	dest->period_guest_us	+= src->period_guest_us;
 	dest->nr_events		+= src->nr_events;
+}
+
+static void hist_entry__add_group_stat(struct hist_entry *he_dest,
+				       struct he_stat *src,
+				       struct perf_evsel *evsel)
+{
+	struct perf_evsel *leader = evsel->leader;
+
+	if (perf_evsel__is_group_leader(evsel))
+		leader = evsel;
+
+	if (leader->nr_members && !he_dest->group_stats) {
+		/*
+		 * A group whose nr_members equals to 0 is a leader-only group.
+		 * So no need to allocate group_stats.
+		 */
+		he_dest->group_stats = calloc(leader->nr_members,
+					      sizeof(struct he_stat));
+		if (!he_dest->group_stats)
+			return;
+	}
+
+	if (perf_evsel__is_group_leader(evsel))
+		he_stat__add_stat(&he_dest->stat, src);
+	else
+		he_stat__add_stat(&he_dest->group_stats[evsel->group_idx], src);
 }
 
 static void hist_entry__decay(struct hist_entry *he)
@@ -417,13 +444,14 @@ void hist_entry__free(struct hist_entry *he)
  * collapse the histogram
  */
 
-static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+static bool hists__collapse_insert_entry(struct hists *hists,
 					 struct rb_root *root,
 					 struct hist_entry *he)
 {
 	struct rb_node **p = &root->rb_node;
 	struct rb_node *parent = NULL;
 	struct hist_entry *iter;
+	struct perf_evsel *evsel = hists_2_evsel(hists);
 	int64_t cmp;
 
 	while (*p != NULL) {
@@ -433,7 +461,10 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
 		cmp = hist_entry__collapse(iter, he);
 
 		if (!cmp) {
-			he_stat__add_stat(&iter->stat, &he->stat);
+			if (symbol_conf.event_group)
+				hist_entry__add_group_stat(iter, &he->stat, evsel);
+			else
+				he_stat__add_stat(&iter->stat, &he->stat);
 
 			if (symbol_conf.use_callchain) {
 				callchain_cursor_reset(&callchain_cursor);
@@ -449,6 +480,19 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
 			p = &(*p)->rb_left;
 		else
 			p = &(*p)->rb_right;
+	}
+
+	if (symbol_conf.event_group) {
+		/*
+		 * 'he' is not found in the leader's tree.
+		 * Insert it to the tree and setup stats properly.
+		 */
+		hist_entry__add_group_stat(he, &he->stat, evsel);
+
+		if (!perf_evsel__is_group_leader(evsel)) {
+			he->hists = &evsel->leader->hists;
+			memset(&he->stat, 0, sizeof(he->stat));
+		}
 	}
 
 	rb_link_node(&he->rb_node_in, parent, p);
@@ -481,6 +525,7 @@ static void hists__apply_filters(struct hists *hists, struct hist_entry *he)
 static void __hists__collapse_resort(struct hists *hists, bool threaded)
 {
 	struct rb_root *root;
+	struct rb_root *dest;
 	struct rb_node *next;
 	struct hist_entry *n;
 
@@ -488,14 +533,26 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
 		return;
 
 	root = hists__get_rotate_entries_in(hists);
+	dest = &hists->entries_collapsed;
 	next = rb_first(root);
+
+	if (symbol_conf.event_group) {
+		/*
+		 * Collapse hist entries to the leader's tree.
+		 * If evsel->leader == NULL, it's the leader.
+		 */
+		struct perf_evsel *leader = hists_2_evsel(hists)->leader;
+
+		if (leader)
+			dest = &leader->hists.entries_collapsed;
+	}
 
 	while (next) {
 		n = rb_entry(next, struct hist_entry, rb_node_in);
 		next = rb_next(&n->rb_node_in);
 
 		rb_erase(&n->rb_node_in, root);
-		if (hists__collapse_insert_entry(hists, &hists->entries_collapsed, n)) {
+		if (hists__collapse_insert_entry(hists, dest, n)) {
 			/*
 			 * If it wasn't combined with one of the entries already
 			 * collapsed, we need to apply the filters that may have
@@ -520,13 +577,38 @@ void hists__collapse_resort_threaded(struct hists *hists)
  * reverse the map, sort on period.
  */
 
-static void __hists__insert_output_entry(struct rb_root *entries,
+static int __hists__output_cmp(struct hist_entry *left,
+			       struct hist_entry *right,
+			       int nr_group_stats)
+{
+	if (left->stat.period > right->stat.period)
+		return 1;
+	if (left->stat.period < right->stat.period)
+		return -1;
+
+	if (symbol_conf.event_group) {
+		int i;
+
+		for (i = 0; i < nr_group_stats; i++) {
+			if (left->group_stats[i].period >
+			    right->group_stats[i].period)
+				return 1;
+			if (left->group_stats[i].period <
+			    right->group_stats[i].period)
+				return -1;
+		}
+	}
+	return 0;
+}
+
+static void __hists__insert_output_entry(struct hists *hists,
 					 struct hist_entry *he,
 					 u64 min_callchain_hits)
 {
-	struct rb_node **p = &entries->rb_node;
+	struct rb_node **p = &hists->entries.rb_node;
 	struct rb_node *parent = NULL;
 	struct hist_entry *iter;
+	struct perf_evsel *evsel = hists_2_evsel(hists);
 
 	if (symbol_conf.use_callchain)
 		callchain_param.sort(&he->sorted_chain, he->callchain,
@@ -536,14 +618,14 @@ static void __hists__insert_output_entry(struct rb_root *entries,
 		parent = *p;
 		iter = rb_entry(parent, struct hist_entry, rb_node);
 
-		if (he->stat.period > iter->stat.period)
+		if (__hists__output_cmp(he, iter, evsel->nr_members) > 0)
 			p = &(*p)->rb_left;
 		else
 			p = &(*p)->rb_right;
 	}
 
 	rb_link_node(&he->rb_node, parent, p);
-	rb_insert_color(&he->rb_node, entries);
+	rb_insert_color(&he->rb_node, &hists->entries);
 }
 
 static void __hists__output_resort(struct hists *hists, bool threaded)
@@ -552,6 +634,16 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
 	struct rb_node *next;
 	struct hist_entry *n;
 	u64 min_callchain_hits;
+
+	if (symbol_conf.event_group) {
+		struct perf_evsel *evsel = hists_2_evsel(hists);
+
+		/*
+		 * We've collapsed all member entries to the leader.
+		 */
+		if (!perf_evsel__is_group_leader(evsel))
+			return;
+	}
 
 	min_callchain_hits = hists->stats.total_period * (callchain_param.min_percent / 100);
 
@@ -571,7 +663,7 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
 		n = rb_entry(next, struct hist_entry, rb_node_in);
 		next = rb_next(&n->rb_node_in);
 
-		__hists__insert_output_entry(&hists->entries, n, min_callchain_hits);
+		__hists__insert_output_entry(hists, n, min_callchain_hits);
 		hists__inc_nr_entries(hists, n);
 	}
 }

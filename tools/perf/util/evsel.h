@@ -235,4 +235,9 @@ static inline bool perf_evsel__is_group_leader(struct perf_evsel *evsel)
 {
 	return evsel->leader == NULL;
 }
+
+static inline struct perf_evsel *hists_2_evsel(struct hists *hists)
+{
+	return container_of(hists, struct perf_evsel, hists);
+}
 #endif /* __PERF_EVSEL_H */

@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include "build-id.h"
 #include "util.h"
+#include "sort.h"
 #include "debug.h"
 #include "symbol.h"
 #include "strlist.h"
@@ -1648,6 +1649,9 @@ int symbol__init(void)
 		free((void *)symfs);
 
 	symbol_conf.kptr_restrict = symbol__read_kptr_restrict();
+
+	if (symbol_conf.event_group)
+		sort__need_collapse = 1;
 
 	symbol_conf.initialized = true;
 	return 0;

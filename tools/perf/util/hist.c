@@ -194,6 +194,28 @@ static void hist_entry__add_group_stat(struct hist_entry *he_dest,
 		he_stat__add_stat(&he_dest->group_stats[evsel->group_idx], src);
 }
 
+static void hists__add_group_stat(struct hists *hists)
+{
+	struct perf_evsel *evsel = hists_2_evsel(hists);
+	struct perf_evsel *leader = evsel->leader;
+	struct hists *leader_hists;
+
+	if (perf_evsel__is_group_leader(evsel))
+		return;
+
+	leader_hists = &leader->hists;
+
+	if (!leader_hists->group_stats) {
+		leader_hists->group_stats = calloc(leader->nr_members,
+						   sizeof(struct events_stats));
+		if (!leader_hists->group_stats)
+			return;
+	}
+
+	memcpy(&leader_hists->group_stats[evsel->group_idx],
+	       &hists->stats, sizeof(struct events_stats));
+}
+
 static void hist_entry__decay(struct hist_entry *he)
 {
 	he->stat.period = (he->stat.period * 7) / 8;
@@ -561,6 +583,9 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
 			hists__apply_filters(hists, n);
 		}
 	}
+
+	if (symbol_conf.event_group)
+		hists__add_group_stat(hists);
 }
 
 void hists__collapse_resort(struct hists *hists)

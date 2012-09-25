@@ -67,6 +67,7 @@ struct hists {
 	const char		*symbol_filter_str;
 	pthread_mutex_t		lock;
 	struct events_stats	stats;
+	struct events_stats	*group_stats;
 	u64			event_stream;
 	u16			col_len[HISTC_NR_COLS];
 };

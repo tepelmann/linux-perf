@@ -45,26 +45,57 @@ static const char *perf_gtk__get_percent_color(double percent)
 	return NULL;
 }
 
+static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
+					    u64 period, u64 total_period)
+{
+	int ret = 0;
+	const char *markup;
+	double percent = 100.0 * period / total_period;
+
+	markup = perf_gtk__get_percent_color(percent);
+	if (markup)
+		ret += scnprintf(buf, size, markup);
+
+	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
+
+	if (markup)
+		ret += scnprintf(buf + ret, size - ret, "</span>");
+
+	return ret;
+}
+
+static int perf_gtk__hpp_color_overhead(struct perf_hpp *hpp,
+					struct hist_entry *he)
+{
+	int ret;
+	struct hists *hists = he->hists;
+
+	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size,
+				he->stat.period, hists->stats.total_period);
+
+	if (symbol_conf.event_group) {
+		int i;
+		struct perf_evsel *evsel = hists_2_evsel(hists);
+
+		for (i = 0; i < evsel->nr_members; i++) {
+			ret += scnprintf(hpp->buf + ret, hpp->size - ret, " ");
+			ret += perf_gtk__percent_color_snprintf(hpp->buf + ret,
+					hpp->size - ret,
+					he->group_stats[i].period,
+					hists->group_stats[i].total_period);
+		}
+	}
+	return ret;
+}
+
 #define HPP__COLOR_FN(_name, _field)						\
 static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
 					 struct hist_entry *he)			\
 {										\
-	struct hists *hists = he->hists;					\
-	double percent = 100.0 * he->stat._field / hists->stats.total_period;	\
-	const char *markup;							\
-	int ret = 0;								\
-										\
-	markup = perf_gtk__get_percent_color(percent);				\
-	if (markup)								\
-		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
-	if (markup)								\
-		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
-										\
-	return ret;								\
+	return perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, 		\
+			he->stat._field, he->hists->stats.total_period);	\
 }
 
-HPP__COLOR_FN(overhead, period)
 HPP__COLOR_FN(overhead_sys, period_sys)
 HPP__COLOR_FN(overhead_us, period_us)
 HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
@@ -103,6 +134,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
 	struct perf_hpp hpp = {
 		.buf		= s,
 		.size		= sizeof(s),
+		.ptr		= hists_2_evsel(hists),
 	};
 
 	nr_cols = 0;

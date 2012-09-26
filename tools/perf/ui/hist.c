@@ -3,34 +3,90 @@
 #include "../util/hist.h"
 #include "../util/util.h"
 #include "../util/sort.h"
+#include "../util/evsel.h"
 
 
 /* hist period print (hpp) functions */
 static int hpp__header_overhead(struct perf_hpp *hpp)
 {
-	return scnprintf(hpp->buf, hpp->size, "Overhead");
+	int len = 8;
+
+	if (symbol_conf.event_group) {
+		struct perf_evsel *evsel = hpp->ptr;
+
+		BUG_ON(!perf_evsel__is_group_leader(evsel));
+
+		len += evsel->nr_members * 8;
+	}
+	return scnprintf(hpp->buf, hpp->size, "%*s", len, "Overhead");
 }
 
-static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_overhead(struct perf_hpp *hpp)
 {
-	return 8;
+	int len = 8;
+
+	if (symbol_conf.event_group) {
+		struct perf_evsel *evsel = hpp->ptr;
+
+		len += evsel->nr_members * 8;
+	}
+	return len;
 }
 
 static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
 {
+	int ret;
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
 
-	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+	ret = percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+
+	if (symbol_conf.event_group) {
+		int i;
+		struct perf_evsel *evsel = hists_2_evsel(hists);
+
+		for (i = 0; i < evsel->nr_members; i++) {
+			u64 period = he->group_stats[i].period;
+			u64 total = hists->group_stats[i].total_period;
+
+			percent = 100.0 * period / total;
+			ret += percent_color_snprintf(hpp->buf + ret,
+						      hpp->size - ret,
+						      " %6.2f%%", percent);
+		}
+
+	}
+	return ret;
 }
 
 static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
 {
+	int ret;
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
 
-	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
+
+	if (symbol_conf.event_group) {
+		int i;
+		struct perf_evsel *evsel = hists_2_evsel(hists);
+
+		for (i = 0; i < evsel->nr_members; i++) {
+			u64 period = he->group_stats[i].period;
+			u64 total = hists->group_stats[i].total_period;
+
+			if (symbol_conf.field_sep) {
+				ret += scnprintf(hpp->buf + ret,
+						 hpp->size - ret, " ");
+			}
+			percent = 100.0 * period / total;
+			ret += scnprintf(hpp->buf + ret, hpp->size - ret,
+					 fmt, percent);
+		}
+
+	}
+	return ret;
 }
 
 static int hpp__header_overhead_sys(struct perf_hpp *hpp)

@@ -332,12 +332,15 @@ unsigned int hists__sort_list_width(struct hists *hists)
 	struct perf_hpp_fmt *fmt;
 	struct sort_entry *se;
 	int i = 0, ret = 0;
+	struct perf_hpp dummy_hpp = {
+		.ptr	= hists_to_evsel(hists),
+	};
 
 	perf_hpp__for_each_format(fmt) {
 		if (i)
 			ret += 2;
 
-		ret += fmt->width(fmt, NULL);
+		ret += fmt->width(fmt, &dummy_hpp);
 	}
 
 	list_for_each_entry(se, &hist_entry__sort_list, list)

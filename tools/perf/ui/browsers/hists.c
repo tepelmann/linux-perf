@@ -567,23 +567,126 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
 	return row - first_row;
 }
 
-#define HPP__COLOR_FN(_name, _field)					\
-static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
-					     struct hist_entry *he)	\
-{									\
-	struct hists *hists = he->hists;				\
-	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
-	*(double *)hpp->ptr = percent;					\
-	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
+struct hpp_arg {
+	struct ui_browser *b;
+	char folded_sign;
+	bool current_entry;
+};
+
+static int hist_browser__hpp_color_callchain(struct hpp_arg *arg)
+{
+	if (!symbol_conf.use_callchain)
+		return 0;
+
+	slsmg_printf("%c ", arg->folded_sign);
+	return 2;
 }
 
-HPP__COLOR_FN(overhead, period)
-HPP__COLOR_FN(overhead_sys, period_sys)
-HPP__COLOR_FN(overhead_us, period_us)
-HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
-HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+			    u64 (*get_field)(struct hist_entry *),
+			    int (*callchain_cb)(struct hpp_arg *))
+{
+	int ret = 0;
+	double percent = 0.0;
+	struct hists *hists = he->hists;
+	struct hpp_arg *arg = hpp->ptr;
 
-#undef HPP__COLOR_FN
+	if (hists->stats.total_period)
+		percent = 100.0 * get_field(he) / hists->stats.total_period;
+
+	ui_browser__set_percent_color(arg->b, percent, arg->current_entry);
+
+	if (callchain_cb)
+		ret += callchain_cb(arg);
+
+	ret += scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+	slsmg_printf("%s", hpp->buf);
+
+	if (symbol_conf.event_group) {
+		int prev_idx, idx_delta, i;
+		struct perf_evsel *evsel = hists_to_evsel(hists);
+		struct hist_entry *pair;
+		int nr_members = evsel->nr_members;
+
+		if (nr_members <= 1)
+			goto out;
+
+		prev_idx = perf_evsel__group_idx(evsel);
+
+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+			u64 period = get_field(pair);
+			u64 total = pair->hists->stats.total_period;
+
+			if (!total)
+				continue;
+
+			evsel = hists_to_evsel(pair->hists);
+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+
+			for (i = 0; i < idx_delta; i++) {
+				ui_browser__set_percent_color(arg->b, 0.0,
+							arg->current_entry);
+				ret += scnprintf(hpp->buf, hpp->size,
+						 " %6.2f%%", 0.0);
+				slsmg_printf("%s", hpp->buf);
+			}
+
+			percent = 100.0 * period / total;
+			ui_browser__set_percent_color(arg->b, percent,
+						      arg->current_entry);
+			ret += scnprintf(hpp->buf, hpp->size,
+					 " %6.2f%%", percent);
+			slsmg_printf("%s", hpp->buf);
+
+			prev_idx += 1 + idx_delta;
+		}
+
+		idx_delta = nr_members - prev_idx - 1;
+
+		for (i = 0; i < idx_delta; i++) {
+			ui_browser__set_percent_color(arg->b, 0.0,
+						      arg->current_entry);
+			ret += scnprintf(hpp->buf, hpp->size, " %6.2f%%", 0.0);
+			slsmg_printf("%s", hpp->buf);
+		}
+	}
+out:
+	if (!arg->current_entry || !arg->b->navkeypressed)
+		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
+
+	return ret;
+}
+
+static u64 __hpp_get_period(struct hist_entry *he)
+{
+	return he->stat.period;
+}
+
+static int hist_browser__hpp_color_overhead(struct perf_hpp *hpp,
+					    struct hist_entry *he)
+{
+	return __hpp__color_fmt(hpp, he, __hpp_get_period,
+				hist_browser__hpp_color_callchain);
+}
+
+#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
+static u64 __hpp_get_##_field(struct hist_entry *he)			\
+{									\
+	return he->stat._field;						\
+}									\
+									\
+static int hist_browser__hpp_color_##_type(struct perf_hpp *hpp,	\
+					   struct hist_entry *he)	\
+{									\
+	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, NULL);	\
+}
+
+__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
+__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
+__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
+__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+
+#undef __HPP_COLOR_PERCENT_FN
 
 void hist_browser__init_hpp(void)
 {
@@ -608,7 +711,6 @@ static int hist_browser__show_entry(struct hist_browser *browser,
 				    unsigned short row)
 {
 	char s[256];
-	double percent;
 	int printed = 0;
 	int width = browser->b.width;
 	char folded_sign = ' ';
@@ -628,11 +730,16 @@ static int hist_browser__show_entry(struct hist_browser *browser,
 	}
 
 	if (row_offset == 0) {
+		struct hpp_arg arg = {
+			.b		= &browser->b,
+			.folded_sign	= folded_sign,
+			.current_entry	= current_entry,
+		};
 		struct perf_hpp hpp = {
 			.buf		= s,
 			.size		= sizeof(s),
+			.ptr		= &arg,
 		};
-		int i = 0;
 
 		ui_browser__gotorc(&browser->b, row, 0);
 
@@ -645,27 +752,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
 			first = false;
 
 			if (fmt->color) {
-				hpp.ptr = &percent;
-				/* It will set percent for us. See HPP__COLOR_FN above. */
 				width -= fmt->color(&hpp, entry);
-
-				ui_browser__set_percent_color(&browser->b, percent, current_entry);
-
-				if (!i && symbol_conf.use_callchain) {
-					slsmg_printf("%c ", folded_sign);
-					width -= 2;
-				}
-
-				slsmg_printf("%s", s);
-
-				if (!current_entry || !browser->b.navkeypressed)
-					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
 			} else {
 				width -= fmt->entry(&hpp, entry);
 				slsmg_printf("%s", s);
 			}
-
-			i++;
 		}
 
 		/* The scroll bar isn't being used */

@@ -93,17 +93,17 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
 	scripting_context = malloc(sizeof(struct scripting_context));
 }
 
-#ifdef NO_LIBPYTHON
-void setup_python_scripting(void)
-{
-	register_python_scripting(&python_scripting_unsupported_ops);
-}
-#else
+#ifdef LIBPYTHON_SUPPORT
 extern struct scripting_ops python_scripting_ops;
 
 void setup_python_scripting(void)
 {
 	register_python_scripting(&python_scripting_ops);
+}
+#else
+void setup_python_scripting(void)
+{
+	register_python_scripting(&python_scripting_unsupported_ops);
 }
 #endif
 

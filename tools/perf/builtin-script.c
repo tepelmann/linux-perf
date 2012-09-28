@@ -1061,7 +1061,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
 		if (strstr(lang_path, "perl"))
 			continue;
 #endif
-#ifdef NO_LIBPYTHON
+#ifndef LIBPYTHON_SUPPORT
 		if (strstr(lang_path, "python"))
 			continue;
 #endif

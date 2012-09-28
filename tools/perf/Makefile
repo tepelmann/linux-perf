@@ -624,7 +624,6 @@ endif
 
 disable-python = $(eval $(disable-python_code))
 define disable-python_code
-  BASIC_CFLAGS += -DNO_LIBPYTHON
   $(if $(1),$(warning No $(1) was found))
   $(warning Python support won't be built)
 endef
@@ -684,6 +683,7 @@ else
           $(warning $(and ,))
           $(error   $(and ,))
         else
+          BASIC_CFLAGS += -DLIBPYTHON_SUPPORT
           ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
           EXTLIBS += $(PYTHON_EMBED_LIBADD)
           LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o

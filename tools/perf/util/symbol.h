@@ -18,26 +18,29 @@
 #include <elf.h>
 #endif
 
-#ifdef HAVE_CPLUS_DEMANGLE
+#ifdef DEMANGLE_SUPPORT
+
+# ifdef HAVE_CPLUS_DEMANGLE
 extern char *cplus_demangle(const char *, int);
 
 static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
 {
 	return cplus_demangle(c, i);
 }
-#else
-#ifdef NO_DEMANGLE
+# else /* HAVE_CPLUS_DEMANGLE */
+#  define PACKAGE "perf"
+#  include <bfd.h>
+# endif /* HAVE_CPLUS_DEMANGLE */
+
+#else /* DEMANGLE_SUPPORT */
+
 static inline char *bfd_demangle(void __maybe_unused *v,
 				 const char __maybe_unused *c,
 				 int __maybe_unused i)
 {
 	return NULL;
 }
-#else
-#define PACKAGE 'perf'
-#include <bfd.h>
-#endif
-#endif
+#endif /* DEMANGLE_SUPPORT */
 
 int hex2u64(const char *ptr, u64 *val);
 char *strxfrchar(char *s, char from, char to);

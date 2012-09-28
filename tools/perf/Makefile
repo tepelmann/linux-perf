@@ -696,36 +696,38 @@ else
   endif
 endif
 
-ifdef NO_DEMANGLE
-	BASIC_CFLAGS += -DNO_DEMANGLE
-else
+ifndef NO_DEMANGLE
         ifdef HAVE_CPLUS_DEMANGLE
 		EXTLIBS += -liberty
+		BASIC_CFLAGS += -DDEMANGLE_SUPPORT
 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
         else
-		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='"perf"' -lbfd
 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
 		ifeq ($(has_bfd),y)
 			EXTLIBS += -lbfd
+			BASIC_CFLAGS += -DDEMANGLE_SUPPORT
 		else
 			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
 			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
 			ifeq ($(has_bfd_iberty),y)
 				EXTLIBS += -lbfd -liberty
+				BASIC_CFLAGS += -DDEMANGLE_SUPPORT
 			else
 				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
 				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
 				ifeq ($(has_bfd_iberty_z),y)
 					EXTLIBS += -lbfd -liberty -lz
+					BASIC_CFLAGS += -DDEMANGLE_SUPPORT
 				else
 					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
 					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
 					ifeq ($(has_cplus_demangle),y)
 						EXTLIBS += -liberty
+						BASIC_CFLAGS += -DDEMANGLE_SUPPORT
 						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
 					else
 						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-						BASIC_CFLAGS += -DNO_DEMANGLE
 					endif
 				endif
 			endif

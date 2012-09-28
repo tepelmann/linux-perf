@@ -156,16 +156,16 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
 	scripting_context = malloc(sizeof(struct scripting_context));
 }
 
-#ifdef NO_LIBPERL
-void setup_perl_scripting(void)
-{
-	register_perl_scripting(&perl_scripting_unsupported_ops);
-}
-#else
+#ifdef LIBPERL_SUPPORT
 extern struct scripting_ops perl_scripting_ops;
 
 void setup_perl_scripting(void)
 {
 	register_perl_scripting(&perl_scripting_ops);
+}
+#else
+void setup_perl_scripting(void)
+{
+	register_perl_scripting(&perl_scripting_unsupported_ops);
 }
 #endif

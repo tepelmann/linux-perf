@@ -311,7 +311,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
 		    "trace events on existing process id"),
 	OPT_STRING(0, "tid", &trace.opts.target.tid, "tid",
 		    "trace events on existing thread id"),
-	OPT_BOOLEAN(0, "all-cpus", &trace.opts.target.system_wide,
+	OPT_BOOLEAN('a', "all-cpus", &trace.opts.target.system_wide,
 		    "system-wide collection from all CPUs"),
 	OPT_STRING(0, "cpu", &trace.opts.target.cpu_list, "cpu",
 		    "list of cpus to monitor"),

@@ -2,6 +2,7 @@
 #include "util/evlist.h"
 #include "util/parse-options.h"
 #include "util/thread_map.h"
+#include "util/cache.h"
 #include "event-parse.h"
 
 #include <libaudit.h>
@@ -335,6 +336,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
 		printf("%s", bf);
 		return err;
 	}
+
+	setup_pager();
 
 	return trace__run(&trace);
 }

@@ -344,6 +344,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
 		return err;
 	}
 
+	if (perf_target__none(&trace.opts.target))
+		trace.opts.target.system_wide = true;
+
 	setup_pager();
 
 	return trace__run(&trace);

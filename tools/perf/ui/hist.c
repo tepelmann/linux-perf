@@ -6,17 +6,20 @@
 
 
 /* hist period print (hpp) functions */
-static int hpp__header_overhead(struct perf_hpp *hpp)
+static int hpp__header_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
+				struct perf_hpp *hpp)
 {
 	return scnprintf(hpp->buf, hpp->size, "Overhead");
 }
 
-static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
+			       struct perf_hpp *hpp __maybe_unused)
 {
 	return 8;
 }
 
-static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__color_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
+			       struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
@@ -24,7 +27,8 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
 }
 
-static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_overhead(struct perf_hpp_fmt *_fmt __maybe_unused,
+			       struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
@@ -33,19 +37,22 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
 }
 
-static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+static int hpp__header_overhead_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
+				    struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
 }
 
-static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_overhead_sys(struct perf_hpp_fmt *fmt __maybe_unused,
+				   struct perf_hpp *hpp __maybe_unused)
 {
 	return 7;
 }
 
-static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__color_overhead_sys(struct perf_hpp_fmt *fmt __maybe_unused,
+				   struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
@@ -53,7 +60,8 @@ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
 	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
 }
 
-static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_overhead_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
+				   struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
@@ -62,19 +70,22 @@ static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
 }
 
-static int hpp__header_overhead_us(struct perf_hpp *hpp)
+static int hpp__header_overhead_us(struct perf_hpp_fmt *_fmt __maybe_unused,
+				   struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "user");
 }
 
-static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
+				  struct perf_hpp *hpp __maybe_unused)
 {
 	return 7;
 }
 
-static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
+				  struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
@@ -82,7 +93,8 @@ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
 	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
 }
 
-static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_overhead_us(struct perf_hpp_fmt *_fmt __maybe_unused,
+				  struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
@@ -91,18 +103,24 @@ static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
 }
 
-static int hpp__header_overhead_guest_sys(struct perf_hpp *hpp)
+static int
+hpp__header_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
+			       struct perf_hpp *hpp)
 {
 	return scnprintf(hpp->buf, hpp->size, "guest sys");
 }
 
-static int hpp__width_overhead_guest_sys(struct perf_hpp *hpp __maybe_unused)
+static int
+hpp__width_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
+			      struct perf_hpp *hpp __maybe_unused)
 {
 	return 9;
 }
 
-static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
-					 struct hist_entry *he)
+static int
+hpp__color_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
+			      struct perf_hpp *hpp,
+			      struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
@@ -110,8 +128,10 @@ static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
 }
 
-static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
-					 struct hist_entry *he)
+static int
+hpp__entry_overhead_guest_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
+			      struct perf_hpp *hpp,
+			      struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
@@ -120,18 +140,24 @@ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
 }
 
-static int hpp__header_overhead_guest_us(struct perf_hpp *hpp)
+static int
+hpp__header_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
+			      struct perf_hpp *hpp)
 {
 	return scnprintf(hpp->buf, hpp->size, "guest usr");
 }
 
-static int hpp__width_overhead_guest_us(struct perf_hpp *hpp __maybe_unused)
+static int
+hpp__width_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
+			     struct perf_hpp *hpp __maybe_unused)
 {
 	return 9;
 }
 
-static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
-					struct hist_entry *he)
+static int
+hpp__color_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
+			     struct perf_hpp *hpp,
+			     struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
@@ -139,8 +165,10 @@ static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
 }
 
-static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
-					struct hist_entry *he)
+static int
+hpp__entry_overhead_guest_us(struct perf_hpp_fmt *_fmt __maybe_unused,
+			     struct perf_hpp *hpp,
+			     struct hist_entry *he)
 {
 	struct hists *hists = he->hists;
 	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
@@ -149,12 +177,14 @@ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
 }
 
-static int hpp__header_baseline(struct perf_hpp *hpp)
+static int hpp__header_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+				struct perf_hpp *hpp)
 {
 	return scnprintf(hpp->buf, hpp->size, "Baseline");
 }
 
-static int hpp__width_baseline(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+			       struct perf_hpp *hpp __maybe_unused)
 {
 	return 8;
 }
@@ -175,7 +205,8 @@ static double baseline_percent(struct hist_entry *he)
 	return percent;
 }
 
-static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+			       struct perf_hpp *hpp, struct hist_entry *he)
 {
 	double percent = baseline_percent(he);
 
@@ -185,7 +216,8 @@ static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
 		return scnprintf(hpp->buf, hpp->size, "        ");
 }
 
-static int hpp__entry_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+			       struct perf_hpp *hpp, struct hist_entry *he)
 {
 	double percent = baseline_percent(he);
 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
@@ -196,57 +228,67 @@ static int hpp__entry_baseline(struct perf_hpp *hpp, struct hist_entry *he)
 		return scnprintf(hpp->buf, hpp->size, "            ");
 }
 
-static int hpp__header_samples(struct perf_hpp *hpp)
+static int hpp__header_samples(struct perf_hpp_fmt *_fmt __maybe_unused,
+			       struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%11s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Samples");
 }
 
-static int hpp__width_samples(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_samples(struct perf_hpp_fmt *fmt __maybe_unused,
+			      struct perf_hpp *hpp __maybe_unused)
 {
 	return 11;
 }
 
-static int hpp__entry_samples(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_samples(struct perf_hpp_fmt *_fmt __maybe_unused,
+			      struct perf_hpp *hpp, struct hist_entry *he)
 {
 	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%11" PRIu64;
 
 	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.nr_events);
 }
 
-static int hpp__header_period(struct perf_hpp *hpp)
+static int hpp__header_period(struct perf_hpp_fmt *_fmt __maybe_unused,
+			      struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Period");
 }
 
-static int hpp__width_period(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_period(struct perf_hpp_fmt *fmt __maybe_unused,
+			     struct perf_hpp *hpp __maybe_unused)
 {
 	return 12;
 }
 
-static int hpp__entry_period(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_period(struct perf_hpp_fmt *_fmt __maybe_unused,
+			     struct perf_hpp *hpp, struct hist_entry *he)
 {
 	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
 
 	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.period);
 }
 
-static int hpp__header_period_baseline(struct perf_hpp *hpp)
+static int hpp__header_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+				       struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Period Base");
 }
 
-static int hpp__width_period_baseline(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_period_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+				      struct perf_hpp *hpp __maybe_unused)
 {
 	return 12;
 }
 
-static int hpp__entry_period_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+				      struct perf_hpp *hpp,
+				      struct hist_entry *he)
 {
 	struct hist_entry *pair = hist_entry__next_pair(he);
 	u64 period = pair ? pair->stat.period : 0;
@@ -254,19 +296,23 @@ static int hpp__entry_period_baseline(struct perf_hpp *hpp, struct hist_entry *h
 
 	return scnprintf(hpp->buf, hpp->size, fmt, period);
 }
-static int hpp__header_delta(struct perf_hpp *hpp)
+
+static int hpp__header_delta(struct perf_hpp_fmt *_fmt __maybe_unused,
+			     struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Delta");
 }
 
-static int hpp__width_delta(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_delta(struct perf_hpp_fmt *fmt __maybe_unused,
+			    struct perf_hpp *hpp __maybe_unused)
 {
 	return 7;
 }
 
-static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_delta(struct perf_hpp_fmt *_fmt __maybe_unused,
+			    struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hist_entry *pair = hist_entry__next_pair(he);
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
@@ -287,19 +333,22 @@ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
 }
 
-static int hpp__header_ratio(struct perf_hpp *hpp)
+static int hpp__header_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
+			     struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Ratio");
 }
 
-static int hpp__width_ratio(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
+			    struct perf_hpp *hpp __maybe_unused)
 {
 	return 14;
 }
 
-static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
+			    struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hist_entry *pair = hist_entry__next_pair(he);
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
@@ -319,19 +368,22 @@ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
 }
 
-static int hpp__header_wdiff(struct perf_hpp *hpp)
+static int hpp__header_wdiff(struct perf_hpp_fmt *_fmt __maybe_unused,
+			     struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Weighted diff");
 }
 
-static int hpp__width_wdiff(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_wdiff(struct perf_hpp_fmt *fmt __maybe_unused,
+			    struct perf_hpp *hpp __maybe_unused)
 {
 	return 14;
 }
 
-static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_wdiff(struct perf_hpp_fmt *_fmt __maybe_unused,
+			    struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hist_entry *pair = hist_entry__next_pair(he);
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
@@ -351,19 +403,22 @@ static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
 }
 
-static int hpp__header_formula(struct perf_hpp *hpp)
+static int hpp__header_formula(struct perf_hpp_fmt *_fmt __maybe_unused,
+			       struct perf_hpp *hpp)
 {
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%70s";
 
 	return scnprintf(hpp->buf, hpp->size, fmt, "Formula");
 }
 
-static int hpp__width_formula(struct perf_hpp *hpp __maybe_unused)
+static int hpp__width_formula(struct perf_hpp_fmt *fmt __maybe_unused,
+			      struct perf_hpp *hpp __maybe_unused)
 {
 	return 70;
 }
 
-static int hpp__entry_formula(struct perf_hpp *hpp, struct hist_entry *he)
+static int hpp__entry_formula(struct perf_hpp_fmt *_fmt __maybe_unused,
+			      struct perf_hpp *hpp, struct hist_entry *he)
 {
 	struct hist_entry *pair = hist_entry__next_pair(he);
 	const char *fmt = symbol_conf.field_sep ? "%s" : "%-70s";
@@ -471,9 +526,9 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
 			first = false;
 
 		if (color && fmt->color)
-			ret = fmt->color(hpp, he);
+			ret = fmt->color(fmt, hpp, he);
 		else
-			ret = fmt->entry(hpp, he);
+			ret = fmt->entry(fmt, hpp, he);
 
 		advance_hpp(hpp, ret);
 	}
@@ -513,7 +568,7 @@ unsigned int hists__sort_list_width(struct hists *hists)
 		if (i)
 			ret += 2;
 
-		ret += fmt->width(NULL);
+		ret += fmt->width(fmt, NULL);
 	}
 
 	list_for_each_entry(se, &hist_entry__sort_list, list)

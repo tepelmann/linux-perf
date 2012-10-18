@@ -568,8 +568,10 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
 }
 
 #define HPP__COLOR_FN(_name, _field)					\
-static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
-					     struct hist_entry *he)	\
+static int hist_browser__hpp_color_ ## _name(				\
+			struct perf_hpp_fmt *fmt __maybe_unused,	\
+			struct perf_hpp *hpp,				\
+			struct hist_entry *he)				\
 {									\
 	struct hists *hists = he->hists;				\
 	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
@@ -647,7 +649,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
 			if (fmt->color) {
 				hpp.ptr = &percent;
 				/* It will set percent for us. See HPP__COLOR_FN above. */
-				width -= fmt->color(&hpp, entry);
+				width -= fmt->color(fmt, &hpp, entry);
 
 				ui_browser__set_percent_color(&browser->b, percent, current_entry);
 
@@ -661,7 +663,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
 				if (!current_entry || !browser->b.navkeypressed)
 					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
 			} else {
-				width -= fmt->entry(&hpp, entry);
+				width -= fmt->entry(fmt, &hpp, entry);
 				slsmg_printf("%s", s);
 			}
 

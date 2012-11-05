@@ -958,6 +958,9 @@ static void perf_event__header_size(struct perf_event *event)
 	if (sample_type & PERF_SAMPLE_READ)
 		size += event->read_size;
 
+	if (sample_type & PERF_SAMPLE_DSRC)
+		size += sizeof(data->dsrc.val);
+
 	event->header_size = size;
 }
 
@@ -4175,6 +4178,9 @@ void perf_output_sample(struct perf_output_handle *handle,
 		perf_output_sample_ustack(handle,
 					  data->stack_user_size,
 					  data->regs_user.regs);
+
+	if (sample_type & PERF_SAMPLE_DSRC)
+		perf_output_put(handle, data->dsrc.val);
 }
 
 void perf_prepare_sample(struct perf_event_header *header,

@@ -1009,6 +1009,10 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
 
 	if (sample_type & PERF_SAMPLE_WEIGHT)
 		printf(" ... weight: %"PRIu64"\n", sample->weight);
+
+        if (sample_type & PERF_SAMPLE_ADDR)
+                printf(" ..... data: 0x%"PRIx64"\n", sample->addr);
+
 }
 
 static struct machine *

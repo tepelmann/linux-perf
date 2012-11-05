@@ -91,6 +91,7 @@ struct perf_sample {
 	u32 cpu;
 	u32 raw_size;
 	u64 weight;
+	u64 dsrc;
 	void *raw_data;
 	struct ip_callchain *callchain;
 	struct branch_stack *branch_stack;

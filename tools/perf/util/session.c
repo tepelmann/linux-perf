@@ -273,6 +273,41 @@ found:
 	ams->map = al.map;
 }
 
+static void ip__resolve_data(struct machine *self, struct thread *thread,
+			     u8 m,
+			    struct addr_map_symbol *ams,
+			    u64 addr)
+{
+	struct addr_location al;
+
+	memset(&al, 0, sizeof(al));
+
+	thread__find_addr_location(thread, self, m, MAP__VARIABLE, addr, &al, NULL);
+	ams->addr = addr;
+	ams->al_addr = al.addr;
+	ams->sym = al.sym;
+	ams->map = al.map;
+}
+
+struct mem_info *machine__resolve_mem(struct machine *self,
+				      struct thread *thr,
+				      struct perf_sample *sample,
+				      u8 cpumode)
+{
+	struct mem_info *mi;
+
+	mi = calloc(1, sizeof(struct mem_info));
+	if (!mi)
+		return NULL;
+
+	ip__resolve_ams(self, thr, &mi->iaddr, sample->ip);
+	ip__resolve_data(self, thr, cpumode, &mi->daddr, sample->addr);
+	mi->cost = sample->weight;
+	mi->dsrc.val = sample->dsrc;
+
+	return mi;
+}
+
 struct branch_info *machine__resolve_bstack(struct machine *self,
 					    struct thread *thr,
 					    struct branch_stack *bs)
@@ -1013,6 +1048,8 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
         if (sample_type & PERF_SAMPLE_ADDR)
                 printf(" ..... data: 0x%"PRIx64"\n", sample->addr);
 
+	if (sample_type & PERF_SAMPLE_DSRC)
+		printf(" . data_src: 0x%"PRIx64"\n", sample->dsrc);
 }
 
 static struct machine *

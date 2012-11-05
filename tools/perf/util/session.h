@@ -72,6 +72,10 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
 					    struct thread *thread,
 					    struct branch_stack *bs);
 
+struct mem_info *machine__resolve_mem(struct machine *self,
+				      struct thread *thread,
+				      struct perf_sample *sample, u8 cpumode);
+
 bool perf_session__has_traces(struct perf_session *self, const char *msg);
 
 void mem_bswap_64(void *src, int byte_size);

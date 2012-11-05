@@ -1025,6 +1025,10 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
 		array++;
 	}
 
+	if (type & PERF_SAMPLE_DSRC) {
+		data->dsrc = *array;
+		array++;
+	}
 	return 0;
 }
 

@@ -1041,6 +1041,8 @@ const struct option record_options[] = {
 	OPT_CALLBACK('j', "branch-filter", &record.opts.branch_stack,
 		     "branch filter mask", "branch stack filter modes",
 		     parse_branch_stack),
+	OPT_BOOLEAN('l', "cost", &record.opts.weight,
+		    "event cost"),
 	OPT_END()
 };
 

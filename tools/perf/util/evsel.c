@@ -474,6 +474,12 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
 		attr->sample_type	|= PERF_SAMPLE_CPU;
 	}
 
+	if (opts->weight)
+		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+
+	if (opts->sample_address)
+		attr->sample_type	|= PERF_SAMPLE_DSRC;
+
 	if (opts->no_delay) {
 		attr->watermark = 0;
 		attr->wakeup_events = 1;

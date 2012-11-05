@@ -150,6 +150,7 @@ EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
 
 EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
 EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
+EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
 
 struct attribute *nhm_events_attrs[] = {
 	EVENT_PTR(CPU_CYCLES),
@@ -178,6 +179,7 @@ struct attribute *snb_events_attrs[] = {
 	EVENT_PTR(STALLED_CYCLES_BACKEND),
 	EVENT_PTR(REF_CPU_CYCLES),
 	EVENT_PTR(mem_ld_snb),
+	EVENT_PTR(mem_st_snb),
 	NULL,
 };
 

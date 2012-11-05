@@ -1020,6 +1020,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
 		}
 	}
 
+	if (type & PERF_SAMPLE_WEIGHT) {
+		data->weight= *array;
+		array++;
+	}
+
 	return 0;
 }
 

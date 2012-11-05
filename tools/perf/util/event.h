@@ -90,6 +90,7 @@ struct perf_sample {
 	u64 period;
 	u32 cpu;
 	u32 raw_size;
+	u64 weight;
 	void *raw_data;
 	struct ip_callchain *callchain;
 	struct branch_stack *branch_stack;

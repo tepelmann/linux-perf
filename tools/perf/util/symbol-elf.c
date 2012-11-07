@@ -719,6 +719,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
 			used_opd = true;
 		}
 
+		if (sym.st_shndx == SHN_ABS)
+			continue;
+
 		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
 		if (!sec)
 			goto out_elf_end;

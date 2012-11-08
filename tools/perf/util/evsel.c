@@ -947,6 +947,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
 		array++;
 	}
 
+	if (type & PERF_SAMPLE_WEIGHT) {
+		data->weight= *array;
+		array++;
+	}
+
 	if (type & PERF_SAMPLE_READ) {
 		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
 		return -1;
@@ -1024,11 +1029,6 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
 			array += size / sizeof(*array);
 			data->user_stack.size = *array;
 		}
-	}
-
-	if (type & PERF_SAMPLE_WEIGHT) {
-		data->weight= *array;
-		array++;
 	}
 
 	if (type & PERF_SAMPLE_DSRC) {

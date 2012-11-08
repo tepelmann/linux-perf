@@ -283,6 +283,17 @@ static void ip__resolve_data(struct machine *self, struct thread *thread,
 	memset(&al, 0, sizeof(al));
 
 	thread__find_addr_location(thread, self, m, MAP__VARIABLE, addr, &al, NULL);
+	if (al.sym == NULL && al.map) {
+		if (!strchr(al.map->dso->short_name, '[') &&
+		    !strstr(al.map->dso->short_name, "//anon") &&
+		    strncmp(al.map->dso->short_name, "perf-", 5)) {
+//			if (strstr(al.map->dso->short_name, "firefox"))
+			{
+//				pr_info("%s: resetting %s (%s)\n", __func__, al.map->dso->long_name, al.map->dso->short_name);
+				memset(&al, 0, sizeof(al));
+			}
+		}
+	}
 	ams->addr = addr;
 	ams->al_addr = al.addr;
 	ams->sym = al.sym;

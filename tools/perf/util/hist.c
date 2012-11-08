@@ -327,6 +327,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
 				if (he->ms.map)
 					he->ms.map->referenced = true;
 			}
+			free(entry->mem_info);
+			free(entry->branch_info);
 			goto out;
 		}
 

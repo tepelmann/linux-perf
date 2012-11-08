@@ -117,6 +117,8 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
 				    ab->addr_width, " ");
 		slsmg_write_nstring(bf, printed);
 		slsmg_write_nstring(dl->line, width - printed - 6);
+	} else if (!dl->name) {
+		slsmg_write_nstring(" ", width - 7);
 	} else {
 		u64 addr = dl->offset;
 		int color = -1;

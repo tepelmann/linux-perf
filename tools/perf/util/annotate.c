@@ -162,7 +162,7 @@ static int comment__symbol(char *raw, char *comment, u64 *addrp, char **namep)
 
 static int lock__parse(struct ins_operands *ops)
 {
-	char *name;
+	char *name = NULL;
 
 	ops->locked.ops = zalloc(sizeof(*ops->locked.ops));
 	if (ops->locked.ops == NULL)
@@ -171,7 +171,10 @@ static int lock__parse(struct ins_operands *ops)
 	if (disasm_line__parse(ops->raw, &name, &ops->locked.ops->raw) < 0)
 		goto out_free_ops;
 
-        ops->locked.ins = ins__find(name);
+	if (name == NULL)
+		goto out_free_ops;
+
+	ops->locked.ins = ins__find(name);
         if (ops->locked.ins == NULL)
                 goto out_free_ops;
 
@@ -492,6 +495,9 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
 
 static void disasm_line__init_ins(struct disasm_line *dl)
 {
+	if (dl->name == NULL)
+		return;
+
 	dl->ins = ins__find(dl->name);
 
 	if (dl->ins == NULL)
@@ -513,6 +519,32 @@ static int disasm_line__parse(char *line, char **namep, char **rawp)
 
 	if (name[0] == '\0')
 		return -1;
+
+	if (symbol_conf.annotate_asm_raw) {
+		/*
+		 * If --asm-raw option was given, objdump output will contain
+		 * hex numbers of the instructions before the symbolic name.
+		 * They are separated by at least two space characters:
+		 *
+		 *   400540:     48 c7 45 f8 00 00 00    movq   $0x0,-0x8(%rbp)
+		 *   400547:     00
+		 *
+		 * It sometimes was broken to multiple lines due to a limited
+		 * width.  In this case following condition will be met:
+		 *
+		 *   dl->offset != -1 && dl->name == NULL.
+		 */
+		name = strstr(name, "  ");
+		if (name == NULL)
+			return 0;
+
+		while (isspace(name[0]))
+			++name;
+
+		if (name[0] == '\0')
+			return -1;
+
+	}
 
 	*rawp = name + 1;
 

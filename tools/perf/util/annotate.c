@@ -635,6 +635,38 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
 	return NULL;
 }
 
+static void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
+				 s64 from, s64 to, const char **path,
+				 double *percent)
+{
+	struct annotation *notes = symbol__annotation(sym);
+	struct source_line *src_line = notes->src->lines;
+	struct sym_hist *h;
+	unsigned int hits = 0;
+	s64 offset = from;
+
+	*percent = 0.0;
+
+	if (src_line) {
+		while (offset < to) {
+			if (*path == NULL)
+				*path = src_line[offset].path;
+
+			*percent += src_line[offset].percent;
+			++offset;
+		}
+	} else {
+		h = annotation__histogram(notes, evsel->idx);
+
+		while (offset < to) {
+			hits += h->addr[offset];
+		}
+
+		if (h->sum)
+			*percent = 100.0 * hits / h->sum;
+	}
+}
+
 static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 start,
 		      struct perf_evsel *evsel, u64 len, int min_pcnt, int printed,
 		      int max_lines, struct disasm_line *queue)
@@ -644,32 +676,18 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
 
 	if (dl->offset != -1) {
 		const char *path = NULL;
-		unsigned int hits = 0;
 		double percent = 0.0;
 		const char *color;
 		struct annotation *notes = symbol__annotation(sym);
-		struct source_line *src_line = notes->src->lines;
-		struct sym_hist *h = annotation__histogram(notes, evsel->idx);
 		s64 offset = dl->offset;
 		const u64 addr = start + offset;
 		struct disasm_line *next;
 
 		next = disasm__get_next_ip_line(&notes->src->source, dl);
 
-		while (offset < (s64)len &&
-		       (next == NULL || offset < next->offset)) {
-			if (src_line) {
-				if (path == NULL)
-					path = src_line[offset].path;
-				percent += src_line[offset].percent;
-			} else
-				hits += h->addr[offset];
-
-			++offset;
-		}
-
-		if (src_line == NULL && h->sum)
-			percent = 100.0 * hits / h->sum;
+		disasm__calc_percent(sym, evsel, offset,
+				     next ? next->offset : (s64) len,
+				     &path, &percent);
 
 		if (percent < min_pcnt)
 			return -1;

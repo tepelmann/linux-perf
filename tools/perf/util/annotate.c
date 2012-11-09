@@ -175,14 +175,14 @@ static int lock__parse(struct ins_operands *ops)
 		goto out_free_ops;
 
 	ops->locked.ins = ins__find(name);
-        if (ops->locked.ins == NULL)
-                goto out_free_ops;
+	if (ops->locked.ins == NULL)
+		goto out_free_ops;
 
-        if (!ops->locked.ins->ops)
-                return 0;
+	if (!ops->locked.ins->ops)
+		return 0;
 
-        if (ops->locked.ins->ops->parse)
-                ops->locked.ins->ops->parse(ops->locked.ops);
+	if (ops->locked.ins->ops->parse)
+		ops->locked.ins->ops->parse(ops->locked.ops);
 
 	return 0;
 

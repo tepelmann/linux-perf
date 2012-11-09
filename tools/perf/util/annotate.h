@@ -81,6 +81,7 @@ struct source_line_percent {
 struct source_line {
 	struct rb_node	node;
 	char		*path;
+	int		nr_pcnt;
 	struct source_line_percent p[1];
 };
 

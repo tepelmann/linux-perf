@@ -635,9 +635,9 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
 	return NULL;
 }
 
-static void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
-				 s64 from, s64 to, const char **path,
-				 double *percent, int nr_percent)
+void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
+			  s64 from, s64 to, const char **path,
+			  double *percent, int nr_percent)
 {
 	struct annotation *notes = symbol__annotation(sym);
 	struct source_line *src_line = notes->src->lines;

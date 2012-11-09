@@ -67,6 +67,9 @@ void disasm_line__free(struct disasm_line *dl);
 struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disasm_line *pos);
 int disasm_line__scnprintf(struct disasm_line *dl, char *bf, size_t size, bool raw);
 size_t disasm__fprintf(struct list_head *head, FILE *fp);
+void disasm__calc_percent(struct symbol *sym, struct perf_evsel *evsel,
+			  s64 from, s64 to, const char **path,
+			  double *percent, int nr_percent);
 
 struct sym_hist {
 	u64		sum;

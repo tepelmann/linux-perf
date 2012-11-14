@@ -7,8 +7,9 @@
  */
 #include "builtin.h"
 
-#include "util/util.h"
+#include <dlfcn.h>
 
+#include "util/util.h"
 #include "util/annotate.h"
 #include "util/color.h"
 #include <linux/list.h>
@@ -431,8 +432,17 @@ static int __cmd_report(struct perf_report *rep)
 						      NULL,
 						      &session->header.env);
 		} else if (use_browser == 2) {
-			perf_evlist__gtk_browse_hists(session->evlist, help,
-						      NULL);
+			int (*hist_browser)(struct perf_evlist *,
+					    const char *,
+					    struct hist_browser_timer *);
+
+			hist_browser = dlsym(perf_gtk_handle,
+					     "perf_evlist__gtk_browse_hists");
+			if (hist_browser == NULL) {
+				ui__error("GTK browser not found!\n");
+				goto out_delete;
+			}
+			hist_browser(session->evlist, help, NULL);
 		}
 	} else
 		perf_evlist__tty_browse_hists(session->evlist, rep, help);

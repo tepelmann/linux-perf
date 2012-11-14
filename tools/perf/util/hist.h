@@ -204,19 +204,6 @@ static inline int script_browse(const char *script_opt __maybe_unused)
 #define K_RIGHT -2
 #endif
 
-#ifdef GTK2_SUPPORT
-int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
-				  struct hist_browser_timer *hbt __maybe_unused);
-#else
-static inline
-int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
-				  const char *help __maybe_unused,
-				  struct hist_browser_timer *hbt __maybe_unused)
-{
-	return 0;
-}
-#endif
-
 unsigned int hists__sort_list_width(struct hists *self);
 
 double perf_diff__compute_delta(struct hist_entry *he);

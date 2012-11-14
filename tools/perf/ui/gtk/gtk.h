@@ -43,4 +43,9 @@ static inline GtkWidget *perf_gtk__setup_info_bar(void)
 }
 #endif
 
+struct perf_evlist;
+struct hist_browser_timer;
+
+int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
+				  struct hist_browser_timer *hbt);
 #endif /* _PERF_GTK_H_ */

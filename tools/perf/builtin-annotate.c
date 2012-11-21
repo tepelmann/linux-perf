@@ -138,7 +138,10 @@ find_next:
 			continue;
 		}
 
-		if (use_browser > 0) {
+		if (use_browser == 2) {
+			hist_entry__gtk_annotate(he, evidx, NULL);
+			return;
+		} else if (use_browser == 1) {
 			key = hist_entry__tui_annotate(he, evidx, NULL);
 			switch (key) {
 			case K_RIGHT:

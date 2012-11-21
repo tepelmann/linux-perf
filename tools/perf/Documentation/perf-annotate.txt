@@ -66,6 +66,10 @@ OPTIONS
 	used. This interfaces starts by centering on the line with more
 	samples, TAB/UNTAB cycles through the lines with more samples.
 
+--gtk:: Use the GTK interface. Use of --gtk requires (but not uses) a tty,
+	if one is not present, as when piping to other commands, the stdio
+	interface is used.
+
 -C::
 --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
 	be provided as a comma-separated list with no space: 0,1. Ranges of

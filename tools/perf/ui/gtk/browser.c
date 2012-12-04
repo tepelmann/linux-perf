@@ -202,7 +202,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
 	perf_hpp__for_each_format(fmt) {
 		fmt->header(fmt, &hpp);
 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
-							    -1, s,
+							    -1, ltrim(s),
 							    renderer, "markup",
 							    col_idx++, NULL);
 	}

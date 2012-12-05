@@ -177,7 +177,7 @@ static void perf_session__delete_dead_threads(struct perf_session *session)
 	machine__delete_dead_threads(&session->host_machine);
 }
 
-static void machine__delete_threads(struct machine *self)
+void machine__delete_threads(struct machine *self)
 {
 	struct rb_node *nd = rb_first(&self->threads);
 

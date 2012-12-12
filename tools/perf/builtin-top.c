@@ -902,10 +902,10 @@ static void perf_top__start_counters(struct perf_top *top)
 		struct perf_event_attr *attr = &counter->attr;
 
 fallback_missing_features:
-		if (top->exclude_guest_missing)
+		if (opts->exclude_guest_missing)
 			attr->exclude_guest = attr->exclude_host = 0;
 retry_sample_id:
-		attr->sample_id_all = top->sample_id_all_missing ? 0 : 1;
+		attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
 try_again:
 		if (perf_evsel__open(counter, top->evlist->cpus,
 				     top->evlist->threads) < 0) {
@@ -915,17 +915,17 @@ try_again:
 				ui__error_paranoid();
 				goto out_err;
 			} else if (err == EINVAL) {
-				if (!top->exclude_guest_missing &&
+				if (!opts->exclude_guest_missing &&
 				    (attr->exclude_guest || attr->exclude_host)) {
 					pr_debug("Old kernel, cannot exclude "
 						 "guest or host samples.\n");
-					top->exclude_guest_missing = true;
+					opts->exclude_guest_missing = true;
 					goto fallback_missing_features;
-				} else if (!top->sample_id_all_missing) {
+				} else if (!opts->sample_id_all_missing) {
 					/*
 					 * Old kernel, no attr->sample_id_type_all field
 					 */
-					top->sample_id_all_missing = true;
+					opts->sample_id_all_missing = true;
 					goto retry_sample_id;
 				}
 			}

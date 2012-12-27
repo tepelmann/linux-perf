@@ -552,6 +552,11 @@ void setup_sorting(const char * const usagestr[], const struct option *opts)
 {
 	char *tmp, *tok, *str = strdup(sort_order);
 
+	if (str == NULL) {
+		error("Not enough memory to setup sort keys");
+		exit(-1);
+	}
+
 	for (tok = strtok_r(str, ", ", &tmp);
 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
 		if (sort_dimension__add(tok) < 0) {

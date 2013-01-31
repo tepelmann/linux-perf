@@ -1318,9 +1318,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
 			continue;
 		case 't':
 			goto zoom_thread;
-		case '/':
+		case 'F':
 			if (ui_browser__input_window("Symbol to show",
-					"Please enter the name of symbol you want to see",
+					"Please enter a string to filter symbols",
 					buf, "ENTER: OK, ESC: Cancel",
 					delay_secs * 2) == K_ENTER) {
 				hists->symbol_filter_str = *buf ? buf : NULL;
@@ -1348,12 +1348,12 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
 					"a             Annotate current symbol\n"
 					"C             Collapse all callchains\n"
 					"E             Expand all callchains\n"
+					"F             Filter symbol by name\n"
 					"d             Zoom into current DSO\n"
 					"t             Zoom into current Thread\n"
 					"r             Run available scripts('perf report' only)\n"
 					"P             Print histograms to perf.hist.N\n"
-					"V             Verbose (DSO names in callchains, etc)\n"
-					"/             Filter symbol by name");
+					"V             Verbose (DSO names in callchains, etc)");
 			continue;
 		case K_ENTER:
 		case K_RIGHT:

@@ -1334,9 +1334,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
 			continue;
 		case K_F1:
 		case 'h':
-		case '?':
 			ui_browser__help_window(&browser->b,
-					"h/?/F1        Show this window\n"
+					"h/F1          Show this window\n"
 					"UP/DOWN/PGUP\n"
 					"PGDN/SPACE    Navigate\n"
 					"q/ESC/CTRL+C  Exit browser\n\n"

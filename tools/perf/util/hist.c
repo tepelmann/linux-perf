@@ -828,6 +828,11 @@ int hist_entry__inc_addr_samples(struct hist_entry *he, int evidx, u64 ip)
 	return symbol__inc_addr_samples(he->ms.sym, he->ms.map, evidx, ip);
 }
 
+int hist_entry__inc_addr_samples_cumulate(struct hist_entry *he, int evidx, struct addr_location *al)
+{
+	return symbol__inc_addr_samples_cumulate(he->ms.sym, he->ms.map, evidx, al);
+}
+
 int hist_entry__annotate(struct hist_entry *he, size_t privsize)
 {
 	return symbol__annotate(he->ms.sym, he->ms.map, privsize);

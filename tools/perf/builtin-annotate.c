@@ -13,6 +13,7 @@
 #include "util/cache.h"
 #include <linux/rbtree.h>
 #include "util/symbol.h"
+#include "util/callchain.h"
 
 #include "perf.h"
 #include "util/debug.h"
@@ -45,10 +46,20 @@ struct perf_annotate {
 static int perf_evsel__add_sample(struct perf_evsel *evsel,
 				  struct perf_sample *sample,
 				  struct addr_location *al,
-				  struct perf_annotate *ann)
+				  struct perf_annotate *ann,
+				  struct machine *machine)
 {
+	struct symbol *parent = NULL;
+	int err = 0;
 	struct hist_entry *he;
 	int ret;
+
+	if ((sort__has_parent || symbol_conf.cumulate_callchain) && sample->callchain) {
+		err = machine__resolve_callchain(machine, evsel, al->thread,
+						 sample, &parent);
+		if (err)
+			return err;
+    }
 
 	if (ann->sym_hist_filter != NULL &&
 	    (al->sym == NULL ||
@@ -62,17 +73,28 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
 		return 0;
 	}
 
-	he = __hists__add_entry(&evsel->hists, al, NULL, 1);
+	he = __hists__add_entry(&evsel->hists, al, parent, sample->period);
 	if (he == NULL)
 		return -ENOMEM;
+
+	if (symbol_conf.use_callchain) {
+		err = callchain_append(he->callchain,
+				       &callchain_cursor,
+				       sample->period);
+		if (err)
+			return err;
+	}
 
 	ret = 0;
 	if (he->ms.sym != NULL) {
 		struct annotation *notes = symbol__annotation(he->ms.sym);
 		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
 			return -ENOMEM;
-
-		ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+		
+		if (symbol_conf.cumulate_callchain)
+			ret = hist_entry__inc_addr_samples_cumulate(he, evsel->idx, al);
+		else
+			ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
 	}
 
 	evsel->hists.stats.total_period += sample->period;
@@ -99,7 +121,7 @@ static int process_sample_event(struct perf_tool *tool,
 	if (ann->cpu_list && !test_bit(sample->cpu, ann->cpu_bitmap))
 		return 0;
 
-	if (!al.filtered && perf_evsel__add_sample(evsel, sample, &al, ann)) {
+	if (!al.filtered && perf_evsel__add_sample(evsel, sample, &al, ann, machine)) {
 		pr_warning("problem incrementing symbol count, "
 			   "skipping event\n");
 		return -1;

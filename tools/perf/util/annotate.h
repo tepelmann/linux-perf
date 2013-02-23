@@ -120,6 +120,9 @@ static inline struct annotation *symbol__annotation(struct symbol *sym)
 	return &a->annotation;
 }
 
+
+int symbol__inc_addr_samples_cumulate(struct symbol *sym, struct map *map,
+			     int evidx, struct addr_location *al);
 int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
 			     int evidx, u64 addr);
 int symbol__alloc_hist(struct symbol *sym);

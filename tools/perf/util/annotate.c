@@ -487,6 +487,61 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
 	return 0;
 }
 
+int symbol__inc_addr_samples_cumulate(struct symbol *sym, struct map *map,
+			     int evidx, struct addr_location *al)
+{
+	unsigned i;
+	u64 offset;
+	struct annotation *notes;
+	struct sym_hist *h;
+	struct callchain_cursor cursor;
+	struct addr_location al_child;
+
+	/*
+	 * make a copy of callchain cursor since callchain_cursor_next()
+	 * can leak callchain cursor nodes otherwise.
+	 */
+	callchain_cursor_copy(&cursor, &callchain_cursor);
+
+	/*
+         * map, sym and addr in al_child will be updated on a loop below.
+         * The other fields are kept same as original @al.
+         */
+	al_child = *al;
+
+	// increase calling addresses in calling functions
+	for (i = 1; i < callchain_cursor.nr; i++) {
+		if (callchain_cursor_peek_al(&cursor, &al_child))
+			return 0;
+		
+		pr_debug3("callchain: %i %s\n", i, al_child.sym->name);
+		/*
+		* XXX: Adding an entry without symbol information caused
+		* subtle problems.  Just skip it for now.
+		*/
+		if (al_child.sym == NULL) {
+			callchain_cursor_next(&cursor);
+			pr_debug2("%s: al_child.sym == NULL!\n", __func__);
+			continue;
+		}
+
+		notes = symbol__annotation(al_child.sym);
+		if (notes->src == NULL){
+			pr_debug2("%s: notes->src == NULL for symbol '%s'. allocating histogram...\n", __func__, al_child.sym->name);
+			symbol__alloc_hist(al_child.sym);
+		}
+
+		offset = map->map_ip(map, al_child.addr) - al_child.sym->start;
+		h = annotation__histogram(notes, evidx);
+		h->sum++;
+		h->addr[--offset]++;
+		pr_debug3("%#" PRIx64 " %s: period++ [addr: %#" PRIx64 ", %#" PRIx64 ", evidx=%d] => %" PRIu64 "\n",
+			sym->start, sym->name, al_child.addr, al_child.addr - al_child.sym->start, evidx, h->addr[offset]);
+		callchain_cursor_next(&cursor);
+	}
+	return 0;
+}
+
 static void disasm_line__init_ins(struct disasm_line *dl)
 {
 	dl->ins = ins__find(dl->name);

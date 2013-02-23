@@ -284,6 +284,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
 	OPT_STRING(0, "objdump", &objdump_path, "path",
 		   "objdump binary to use for disassembly and annotations"),
+	OPT_BOOLEAN('A', "cumulate", &symbol_conf.cumulate_callchain,
+            "Accumulate samples along the callchain"),
 	OPT_END()
 	};
 
@@ -293,6 +295,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
 		use_browser = 0;
 	else if (annotate.use_tui)
 		use_browser = 1;
+
+	symbol_conf.use_callchain = symbol_conf.cumulate_callchain;
 
 	setup_browser(true);
 

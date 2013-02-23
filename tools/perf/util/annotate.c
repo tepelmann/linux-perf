@@ -931,6 +931,10 @@ static void symbol__free_source_line(struct symbol *sym, int len)
 	struct source_line *src_line = notes->src->lines;
 	int i;
 
+	// TODO: dont know if this is a good solution...
+	if (notes->src->lines == NULL)
+		return;
+
 	for (i = 0; i < len; i++)
 		free(src_line[i].path);
 

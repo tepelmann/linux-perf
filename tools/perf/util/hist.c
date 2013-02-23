@@ -652,8 +652,9 @@ static void __hists__insert_output_entry(struct rb_root *entries,
 	struct rb_node **p = &entries->rb_node;
 	struct rb_node *parent = NULL;
 	struct hist_entry *iter;
-
-	if (symbol_conf.use_callchain)
+	
+	// TODO: dont know if this is a good solution (added callchain_param.sort != NULL)...
+	if (symbol_conf.use_callchain && callchain_param.sort != NULL)
 		callchain_param.sort(&he->sorted_chain, he->callchain,
 				      min_callchain_hits, &callchain_param);
 
